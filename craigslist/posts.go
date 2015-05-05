@@ -2,7 +2,6 @@ package craigslist
 
 import (
 	"../scraper"
-	"fmt"
 )
 
 const (
@@ -18,7 +17,6 @@ type Posts struct {
 func (p *Posts) Next() bool {
 	offset := p.page * 100
 	pageUrl := fmt.Sprintf(posts, p.City, offset)
-	fmt.Println(pageUrl)
 	p.urls = postUrls(pageUrl)
 	p.page++
 	return len(p.urls) > 0
