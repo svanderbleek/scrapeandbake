@@ -1,7 +1,7 @@
 package craigslist
 
 import (
-	"../scraper"
+	"github.com/rentapplication/craigjr/scraper"
 )
 
 const (

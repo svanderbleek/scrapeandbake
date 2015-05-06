@@ -1,7 +1,7 @@
 package scraper
 
 import (
-	"../proxy"
+	"github.com/rentapplication/craigjr/proxy"
 )
 
 type Query struct {

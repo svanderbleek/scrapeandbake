@@ -1,8 +1,8 @@
 package proxy
 
 import (
-	"../web"
 	"fmt"
+	"github.com/rentapplication/craigjr/web"
 	"os"
 )
 

@@ -20,10 +20,10 @@ func Load(sink proxySink) {
 func tryLoadProxies(sink proxySink, source proxySource) {
 	result := source()
 	if result.Error == nil {
+		log.Printf("Proxies loaded from %v", source)
 		loadProxies(sink, result.Proxies)
-		log.Printf("%v Proxies loaded", len(result.Proxies))
 	} else {
-		log.Printf("Proxies failed to load")
+		log.Printf("Proxies failed to load from %v", source)
 		log.Println(result.Error.Error())
 	}
 }
@@ -31,5 +31,6 @@ func tryLoadProxies(sink proxySink, source proxySource) {
 func loadProxies(sink proxySink, proxies []*Proxy) {
 	for _, proxy := range proxies {
 		sink <- proxy
+		log.Printf("Proxy loaded %v", proxy)
 	}
 }

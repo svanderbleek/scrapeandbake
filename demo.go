@@ -1,21 +1,31 @@
 package main
 
 import (
-	"./proxy"
 	"fmt"
-	"sync"
+	"github.com/rentapplication/craigjr/proxy"
 )
 
 func main() {
 	proxyList := proxy.NewList()
-	var wg sync.WaitGroup
+	responses := make(chan string)
+
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
 		go func() {
-			defer wg.Done()
-			response := proxyList.Get("http://atlanta.craigslist.org/search/apa?s=100")
-			fmt.Println(string(response.Body))
+			for {
+				response := proxyList.Get("http://atlanta.craigslist.org/search/apa?s=100")
+				if response.Error == nil {
+					responses <- "ok"
+				} else {
+					responses <- response.Error.Error()
+				}
+			}
 		}()
 	}
-	wg.Wait()
+
+	for {
+		select {
+		case r := <-responses:
+			fmt.Println(r)
+		}
+	}
 }
