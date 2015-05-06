@@ -15,6 +15,7 @@ type Result struct {
 func Load(sink proxySink) {
 	go tryLoadProxies(sink, kingProxy)
 	go tryLoadProxies(sink, proxIsRight)
+	go tryLoadProxies(sink, inCloak)
 }
 
 func tryLoadProxies(sink proxySink, source proxySource) {

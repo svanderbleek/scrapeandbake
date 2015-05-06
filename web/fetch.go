@@ -15,6 +15,15 @@ type Query struct {
 func (q *Query) Fetch() {
 	body, err := fetchBody(q.Url)
 	if err == nil {
+		q.Result = string(body)
+	} else {
+		q.Error = err
+	}
+}
+
+func (q *Query) FetchJson() {
+	body, err := fetchBody(q.Url)
+	if err == nil {
 		err = readResult(body, q.Result)
 	}
 	if err != nil {

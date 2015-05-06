@@ -35,7 +35,7 @@ func proxIsRightFetch() *web.Query {
 		Url:    proxIsRightUrl(),
 		Result: &proxIsRightResult{},
 	}
-	query.Fetch()
+	query.FetchJson()
 	return query
 }
 

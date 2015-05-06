@@ -9,7 +9,7 @@ func main() {
 	proxyList := proxy.NewList()
 	responses := make(chan string)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 4; i++ {
 		go func() {
 			for {
 				response := proxyList.Get("http://atlanta.craigslist.org/search/apa?s=100")

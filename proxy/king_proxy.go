@@ -39,7 +39,7 @@ func kingProxyFetch() *web.Query {
 		Url:    kingProxyUrl(),
 		Result: &kingProxyResult{},
 	}
-	query.Fetch()
+	query.FetchJson()
 	return query
 }
 
