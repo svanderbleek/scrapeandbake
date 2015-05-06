@@ -2,10 +2,22 @@ package main
 
 import (
 	"fmt"
+	"github.com/rentapplication/craigjr/craigslist"
+	"github.com/rentapplication/craigjr/crawler"
 	"github.com/rentapplication/craigjr/proxy"
 )
 
 func main() {
+	atlanta := &craigslist.Posts{City: "atlanta"}
+	urls := crawler.NewUrlQueue()
+	go crawler.Crawl(atlanta, urls)
+	for {
+		url := urls.Pop()
+		fmt.Println(url)
+	}
+}
+
+func proxyDemo() {
 	proxyList := proxy.NewList()
 	responses := make(chan string)
 

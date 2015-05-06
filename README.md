@@ -11,6 +11,5 @@ see `demo.go` for usage
 ## Agenda
 
 - [x] Proxy List as Http Transport
-- [ ] Stream Urls to UrlQueue from Crawler as they appear
+- [ ] Pull from City List for Crawlers to produce Post Urls
 - [ ] Go routines to pull from UrlQueue and scrape Post data
-- [ ] Pull from City List for Crawlers

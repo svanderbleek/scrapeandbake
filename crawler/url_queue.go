@@ -1,4 +1,4 @@
-package scraper
+package crawler
 
 type UrlQueue struct {
 	queue chan string

@@ -9,14 +9,30 @@ import (
 const MAX_PROXY_ERRORS = 2
 
 var (
-	blockedMessage = regexp.MustCompile(`This IP has been automatically blocked`)
+	blockedMessage    = regexp.MustCompile(`This IP has been automatically blocked`)
+	proxyListInstance = NewList()
 )
+
+func MustGet(url string) *Response {
+	response := &Response{Error: EmptyResponseError{}}
+	for response.Error != nil {
+		response = proxyListInstance.Get(url)
+	}
+	return response
+}
 
 type ProxyBlockedError struct {
 }
 
 func (pbe ProxyBlockedError) Error() string {
 	return "Proxy blocked"
+}
+
+type EmptyResponseError struct {
+}
+
+func (ere EmptyResponseError) Error() string {
+	return "Response is empty"
 }
 
 type Response struct {
