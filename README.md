@@ -8,6 +8,14 @@ go build && ./craigjr
 
 see `demo.go` for usage
 
+## Config
+
+```
+export IN_CLOAK_API_KEY=
+export PROX_IS_RIGHT_API_KEY=
+export KING_PROXY_API_KEY=
+```
+
 ## Agenda
 
 - [x] Proxy List as Http Transport
