@@ -103,9 +103,7 @@ func proxyIsBlocked(body string) bool {
 func (list *List) Borrow() *Proxy {
 	var proxy *Proxy
 	if list.Len() > 0 {
-		list.state.Lock()
-		proxy = heap.Pop(list).(*Proxy)
-		list.state.Unlock()
+		proxy = list.lockedRemove()
 	} else {
 		log.Printf("Waiting for proxy")
 		proxy = <-list.in
@@ -113,17 +111,29 @@ func (list *List) Borrow() *Proxy {
 	return proxy
 }
 
+func (list *List) lockedRemove() *Proxy {
+	list.state.Lock()
+	proxy := heap.Pop(list).(*Proxy)
+	list.state.Unlock()
+	return proxy
+}
+
 func (list *List) Return(proxy *Proxy) {
 	if proxy.Errors < MAX_PROXY_ERRORS {
 		log.Printf("Returning proxy %v", proxy)
-		list.state.Lock()
-		heap.Push(list, proxy)
-		list.state.Unlock()
+		list.lockedAdd(proxy)
 	} else {
 		log.Printf("Failing proxy   %v", proxy)
 	}
 }
 
+func (list *List) lockedAdd(proxy *Proxy) {
+	list.state.Lock()
+	heap.Push(list, proxy)
+	list.state.Unlock()
+}
+
+// Heap interface{} Implementation
 func (list *List) Pop() interface{} {
 	index := list.Len() - 1
 	popped := list.Proxies[index]
@@ -139,10 +149,10 @@ func (list *List) Len() int {
 	return len(list.Proxies)
 }
 
-func (list *List) Less(i, j int) bool {
-	proxyI := list.Proxies[i]
-	proxyJ := list.Proxies[j]
-	return proxyI.Errors < proxyJ.Errors || (proxyI.Errors == proxyJ.Errors && proxyI.Successes > proxyJ.Successes)
+func (list *List) Less(in, jn int) bool {
+	i := list.Proxies[in]
+	j := list.Proxies[jn]
+	return j.Successes <= i.Successes
 }
 
 func (list *List) Swap(i, j int) {

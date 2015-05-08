@@ -26,6 +26,18 @@ func (fps *FakeProxySource) Fetch(stream ProxyStream) {
 	}
 }
 
+func randomWork(length int) {
+	duration := time.Duration(rand.Intn(length))
+	time.Sleep(duration * time.Millisecond)
+}
+
+func TestAsyncAccess(t *testing.T) {
+	go list.Load(&FakeProxySource{})
+	runProxyConsumers(100)
+	close(list.in)
+	assertOrder(t, list)
+}
+
 func runProxyConsumers(consumers int) {
 	var wg sync.WaitGroup
 	wg.Add(consumers)
@@ -47,30 +59,24 @@ func useProxyAttempts(attempts int) {
 	}
 }
 
-func randomWork(length int) {
-	duration := time.Duration(rand.Intn(length))
-	time.Sleep(duration * time.Millisecond)
-}
+const PERCENT_FAILURE = 0.30
 
 func randomSuccessOrError(proxy *Proxy) {
-	if rand.Intn(2) > 0 {
+	if rand.Float32() > PERCENT_FAILURE {
 		proxy.Successes++
 	} else {
 		proxy.Errors++
 	}
 }
 
-func TestAsyncAccess(t *testing.T) {
-	go list.Load(&FakeProxySource{})
-	runProxyConsumers(100)
-	close(list.in)
-	proxy := list.Borrow()
+func assertOrder(t *testing.T, list *List) {
+	i := list.Borrow()
 	for list.Len() > 0 {
-		next := list.Borrow()
-		log.Printf("Comparing proxy %v with %v", proxy, next)
-		if proxy.Errors > next.Errors || (proxy.Errors == next.Errors && proxy.Successes < next.Successes) {
-			t.Errorf("Invalid Ordering of %v before %v", proxy, next)
+		j := list.Borrow()
+		log.Printf("Comparing proxy %v with %v", i, j)
+		if !(i.Successes >= j.Successes && i.Errors < j.Errors+MAX_PROXY_ERRORS) {
+			t.Errorf("Invalid Ordering of %v before %v", i, j)
 		}
-		proxy = next
+		i = j
 	}
 }
