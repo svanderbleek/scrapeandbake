@@ -4,9 +4,12 @@ import (
 	"container/heap"
 	"log"
 	"regexp"
+	"sync"
 )
 
-const MAX_PROXY_ERRORS = 2
+const (
+	MAX_PROXY_ERRORS = 2
+)
 
 var (
 	blockedMessage    = regexp.MustCompile(`This IP has been automatically blocked`)
@@ -43,15 +46,21 @@ type Response struct {
 
 type List struct {
 	Proxies []*Proxy
-	load    chan *Proxy
+	state   *sync.Mutex
+	in      ProxyStream
 }
 
 func NewList() *List {
 	list := &List{
-		load: make(chan *Proxy),
+		in:    make(ProxyStream),
+		state: &sync.Mutex{},
 	}
-	go Load(list.load)
+	heap.Init(list)
 	return list
+}
+
+func (list *List) Load(source ProxySource) {
+	go source.Fetch(list.in)
 }
 
 func (list *List) Get(url string) *Response {
@@ -94,19 +103,24 @@ func proxyIsBlocked(body string) bool {
 func (list *List) Borrow() *Proxy {
 	var proxy *Proxy
 	if list.Len() > 0 {
+		list.state.Lock()
 		proxy = heap.Pop(list).(*Proxy)
+		list.state.Unlock()
 	} else {
 		log.Printf("Waiting for proxy")
-		proxy = <-list.load
+		proxy = <-list.in
 	}
-	log.Printf("Borrowing proxy %v", proxy)
 	return proxy
 }
 
 func (list *List) Return(proxy *Proxy) {
 	if proxy.Errors < MAX_PROXY_ERRORS {
 		log.Printf("Returning proxy %v", proxy)
+		list.state.Lock()
 		heap.Push(list, proxy)
+		list.state.Unlock()
+	} else {
+		log.Printf("Failing proxy   %v", proxy)
 	}
 }
 
@@ -126,7 +140,9 @@ func (list *List) Len() int {
 }
 
 func (list *List) Less(i, j int) bool {
-	return list.Proxies[i].Errors < list.Proxies[j].Errors
+	proxyI := list.Proxies[i]
+	proxyJ := list.Proxies[j]
+	return proxyI.Errors < proxyJ.Errors || (proxyI.Errors == proxyJ.Errors && proxyI.Successes > proxyJ.Successes)
 }
 
 func (list *List) Swap(i, j int) {

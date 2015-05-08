@@ -18,19 +18,20 @@ func (bre BadResponseError) Error() string {
 
 type Proxy struct {
 	*http.Client
-	Url    string
-	Errors int
+	Url       string
+	Errors    int
+	Successes int
 }
 
 func (p *Proxy) String() string {
-	return fmt.Sprintf("Proxy %v Errors %v", p.Url, p.Errors)
+	return fmt.Sprintf("Proxy %v Errors %v Successes %v", p.Url, p.Errors, p.Successes)
 }
 
 func NewProxy(proxyUrl string) *Proxy {
 	proxy := proxy(proxyUrl)
 	transport := &http.Transport{Proxy: proxy}
 	client := &http.Client{Transport: transport}
-	return &Proxy{client, proxyUrl, 0}
+	return &Proxy{client, proxyUrl, 0, 0}
 }
 
 func proxy(proxyUrl string) func(*http.Request) (*url.URL, error) {

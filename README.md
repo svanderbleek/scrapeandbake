@@ -8,7 +8,7 @@ go build && ./craigjr
 
 see `demo.go` for usage
 
-## Config
+## config
 
 ```
 export IN_CLOAK_API_KEY=
@@ -16,7 +16,7 @@ export PROX_IS_RIGHT_API_KEY=
 export KING_PROXY_API_KEY=
 ```
 
-## Agenda
+## agenda
 
 - [x] Proxy List as Http Transport
 - [x] Posts scrapes full Urls for each Post
