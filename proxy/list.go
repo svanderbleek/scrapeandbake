@@ -3,51 +3,19 @@ package proxy
 import (
 	"container/heap"
 	"log"
-	"regexp"
 	"sync"
 )
-
-const (
-	MAX_PROXY_ERRORS = 2
-)
-
-var (
-	blockedMessage    = regexp.MustCompile(`This IP has been automatically blocked`)
-	proxyListInstance = NewList()
-)
-
-func MustGet(url string) *Response {
-	response := &Response{Error: EmptyResponseError{}}
-	for response.Error != nil {
-		response = proxyListInstance.Get(url)
-	}
-	return response
-}
-
-type ProxyBlockedError struct {
-}
-
-func (pbe ProxyBlockedError) Error() string {
-	return "Proxy blocked"
-}
-
-type EmptyResponseError struct {
-}
-
-func (ere EmptyResponseError) Error() string {
-	return "Response is empty"
-}
-
-type Response struct {
-	Url   string
-	Body  string
-	Error error
-}
 
 type List struct {
 	Proxies []*Proxy
 	state   *sync.Mutex
 	in      ProxyStream
+}
+
+var defaultList = NewList()
+
+func LoadDefault() {
+	defaultList.Load(KingProxy{}, InCloak{}, ProxIsRight{})
 }
 
 func NewList() *List {
@@ -59,8 +27,32 @@ func NewList() *List {
 	return list
 }
 
-func (list *List) Load(source ProxySource) {
-	go source.Fetch(list.in)
+// Asynchronous Proxy loader
+func (list *List) Load(sources ...ProxySource) {
+	for _, source := range sources {
+		go Fetch(list.in, source)
+	}
+}
+
+// Borrows Proxies until successful Response
+func MustGet(url string) *Response {
+	response := &Response{Error: EmptyResponseError{}}
+	for response.Error != nil {
+		response = defaultList.Get(url)
+	}
+	return response
+}
+
+type Response struct {
+	Url   string
+	Body  string
+	Error error
+}
+
+type EmptyResponseError struct{}
+
+func (ere EmptyResponseError) Error() string {
+	return "Response is empty"
 }
 
 func (list *List) Get(url string) *Response {
@@ -73,7 +65,6 @@ func (list *List) Get(url string) *Response {
 }
 
 func (list *List) getBodyWithProxy(url string) (string, error) {
-	log.Printf("Proxies status: %v", list.Proxies)
 	proxy := list.Borrow()
 	log.Printf("Get url %v with Proxy %v", url, proxy)
 	body, err := proxy.getBody(url)
@@ -87,23 +78,20 @@ func (list *List) getBodyWithProxy(url string) (string, error) {
 }
 
 func (list *List) discardProxyIfBlocked(proxy *Proxy, body string) error {
-	if !proxyIsBlocked(body) {
-		list.Return(proxy)
-		return nil
-	} else {
+	if proxy.isBlocked(body) {
 		log.Printf("Proxy %v is blocked, discarding", proxy)
 		return ProxyBlockedError{}
+	} else {
+		list.Return(proxy)
+		return nil
 	}
-}
-
-func proxyIsBlocked(body string) bool {
-	return blockedMessage.MatchString(body)
 }
 
 func (list *List) Borrow() *Proxy {
 	var proxy *Proxy
-	if list.Len() > 0 {
+	if list.Len() > 0 { // TODO race condition need to wrap in lock
 		proxy = list.lockedRemove()
+		log.Printf("Borrowing proxy %v", proxy)
 	} else {
 		log.Printf("Waiting for proxy")
 		proxy = <-list.in
@@ -117,6 +105,8 @@ func (list *List) lockedRemove() *Proxy {
 	list.state.Unlock()
 	return proxy
 }
+
+const MAX_PROXY_ERRORS = 2
 
 func (list *List) Return(proxy *Proxy) {
 	if proxy.Errors < MAX_PROXY_ERRORS {

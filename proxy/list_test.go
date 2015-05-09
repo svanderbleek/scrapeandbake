@@ -8,22 +8,22 @@ import (
 	"time"
 )
 
-var (
-	list = NewList()
-)
-
-type FakeProxySource struct {
-	stop chan int
+func TestAsyncAccess(t *testing.T) {
+	list := NewList()
+	runProxySource(list)
+	runProxyConsumers(list, 100)
+	assertOrder(t, list)
 }
 
-func (fps *FakeProxySource) Fetch(stream ProxyStream) {
-	defer func() {
-		recover()
-	}()
-	for {
-		stream <- &Proxy{}
-		randomWork(10)
+type FakeProxySource struct{}
+
+func (fps FakeProxySource) Result() *Result {
+	randomWork(20)
+	var proxies []*Proxy
+	for i := 0; i < 1000; i++ {
+		proxies = append(proxies, &Proxy{})
 	}
+	return &Result{Proxies: proxies}
 }
 
 func randomWork(length int) {
@@ -31,26 +31,23 @@ func randomWork(length int) {
 	time.Sleep(duration * time.Millisecond)
 }
 
-func TestAsyncAccess(t *testing.T) {
-	go list.Load(&FakeProxySource{})
-	runProxyConsumers(100)
-	close(list.in)
-	assertOrder(t, list)
+func runProxySource(list *List) {
+	go list.Load(FakeProxySource{})
 }
 
-func runProxyConsumers(consumers int) {
+func runProxyConsumers(list *List, consumers int) {
 	var wg sync.WaitGroup
 	wg.Add(consumers)
 	for ; consumers > 0; consumers-- {
 		go func() {
 			defer wg.Done()
-			useProxyAttempts(10)
+			useProxyAttempts(list, 10)
 		}()
 	}
 	wg.Wait()
 }
 
-func useProxyAttempts(attempts int) {
+func useProxyAttempts(list *List, attempts int) {
 	for ; attempts > 0; attempts-- {
 		proxy := list.Borrow()
 		randomWork(10)

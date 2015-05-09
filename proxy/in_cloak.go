@@ -8,47 +8,52 @@ import (
 	"strings"
 )
 
-const (
-	inCloakList  = "http://incloak.com/api/proxylist.txt?out=plain&lang=en"
-	inCloakLogin = "http://incloak.com/login"
-)
+type InCloak struct{}
 
-type InCloakLoginError struct {
+func (ic InCloak) String() string {
+	return "InCloak.com"
 }
 
-func (icle InCloakLoginError) Error() string {
-	return "InCloak Login Failed"
-}
-
-func inCloak() *Result {
+func (ic InCloak) Result() *Result {
 	result := &Result{}
-	query := inCloakFetch()
+	query := ic.Query()
 	if query.Error == nil {
-		result.Proxies = inCloakBuildProxies(query.Result.(string))
+		result.Proxies = ic.Proxies(query.Result.(string))
 	} else {
 		result.Error = query.Error
 	}
 	return result
 }
 
-func inCloakFetch() *web.Query {
-	err := inCloakLoginPost()
+func (ic InCloak) Query() *web.Query {
+	err := ic.Login()
 	if err == nil {
-		return inCloakQuery()
+		return ic.ListQuery()
 	} else {
 		return &web.Query{Error: err}
 	}
 }
 
-func inCloakLoginPost() error {
-	response, err := http.PostForm(inCloakLogin, url.Values{"c": {os.Getenv("IN_CLOAK_API_KEY")}})
+const inCloakLogin = "http://incloak.com/login"
+
+type InCloakLoginError struct{}
+
+func (icle InCloakLoginError) Error() string {
+	return "InCloak Login Failed"
+}
+
+func (ic InCloak) Login() error {
+	queryString := url.Values{"c": {os.Getenv("IN_CLOAK_API_KEY")}}
+	response, err := http.PostForm(inCloakLogin, queryString)
 	if err == nil && response.StatusCode >= 400 {
 		return InCloakLoginError{}
 	}
 	return err
 }
 
-func inCloakQuery() *web.Query {
+const inCloakList = "http://incloak.com/api/proxylist.txt?out=plain&lang=en"
+
+func (ic InCloak) ListQuery() *web.Query {
 	query := &web.Query{
 		Url: inCloakList,
 	}
@@ -56,15 +61,15 @@ func inCloakQuery() *web.Query {
 	return query
 }
 
-func inCloakBuildProxies(result string) []*Proxy {
+func (ic InCloak) Proxies(result string) []*Proxy {
 	lines := strings.Split(result, "\r\n")
 	var proxies []*Proxy
 	for _, proxy := range lines {
-		proxies = append(proxies, inCloakBuildProxy(proxy))
+		proxies = append(proxies, ic.Proxy(proxy))
 	}
 	return proxies
 }
 
-func inCloakBuildProxy(proxy string) *Proxy {
+func (ic InCloak) Proxy(proxy string) *Proxy {
 	return NewProxy("http://" + proxy)
 }
