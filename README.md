@@ -20,5 +20,7 @@ export KING_PROXY_API_KEY=
 
 - [x] Proxy List as Http Transport
 - [x] Posts scrapes full Urls for each Post
-- [ ] Pull from City List for Crawlers to produce Post Urls
-- [ ] Go routines to pull from UrlQueue and scrape Post data
+- [x] Pull from City List for Crawlers to produce Post Urls
+- [x] Visitors to pull from Url stream
+- [ ] Pool sizes tuned for number of open connections
+- [ ] scrape Post data
