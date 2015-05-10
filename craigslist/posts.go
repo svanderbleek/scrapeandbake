@@ -2,55 +2,67 @@ package craigslist
 
 import (
 	"fmt"
-	"github.com/rentapplication/craigjr/proxy"
 	"github.com/rentapplication/craigjr/scraper"
 	"net/url"
 )
 
 const (
+	postsBase = "http://%v.craigslist.org/"
 	postsPage = "http://%v.craigslist.org/search/apa?s=%v"
 )
 
 type Posts struct {
 	City string
+	*url.URL
 	page int
 	urls []string
+	done bool
 }
 
-func (p *Posts) Next() bool {
+func NewPosts(city string) *Posts {
+	base := fmt.Sprintf(postsBase, city)
+	baseUrl, _ := url.Parse(base)
+	return &Posts{
+		City: city,
+		URL:  baseUrl,
+	}
+}
+
+func (p *Posts) Next() (string, bool) {
 	offset := p.page * 100
 	pageUrl := fmt.Sprintf(postsPage, p.City, offset)
-	p.urls = postUrls(pageUrl)
-	p.page++
-	return len(p.urls) > 0
+	if !p.done {
+		p.page++
+	}
+	return pageUrl, p.done
 }
 
-func (p *Posts) Items() []string {
+func (p *Posts) Items(body string) []string {
+	hrefs := scrapeHrefs(body)
+	if len(hrefs) > 0 {
+		p.urls = p.absoluteUrls(hrefs)
+	} else {
+		p.done = true
+		p.urls = []string{}
+	}
 	return p.urls
 }
 
-func postUrls(url string) []string {
-	response := proxy.MustGet(url)
-	hrefs := scrapeHrefs(response.Body)
-	return absoluteUrls(url, hrefs)
-}
-
 func scrapeHrefs(body string) []string {
-	query := scraper.Query{
-		Body:      body,
-		Selector:  "#searchform .row .hdrlnk",
-		Attribute: "href",
-	}
-	return scraper.ScrapeAttributes(query)
+	query := scraper.NewAttributeQuery(
+		body,
+		"#searchform .row .hdrlnk",
+		"href",
+	)
+	return scraper.Scrape(query)
 }
 
-func absoluteUrls(baseUrl string, hrefs []string) []string {
+func (p *Posts) absoluteUrls(hrefs []string) []string {
 	var urls []string
-	base, _ := url.Parse(baseUrl)
 	for _, href := range hrefs {
 		relative, _ := url.Parse(href)
-		absolute := base.ResolveReference(relative).String()
-		urls = append(urls, absolute)
+		absolute := p.ResolveReference(relative)
+		urls = append(urls, absolute.String())
 	}
 	return urls
 }

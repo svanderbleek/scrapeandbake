@@ -23,7 +23,7 @@ func NewProxy(url string) *Proxy {
 	proxy := proxyUrl(url)
 	transport := &http.Transport{Proxy: proxy}
 	client := &http.Client{Transport: transport}
-	return &Proxy{client, url, 0, 0}
+	return &Proxy{Client: client, Url: url}
 }
 
 func proxyUrl(host string) func(*http.Request) (*url.URL, error) {

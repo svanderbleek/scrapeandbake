@@ -4,43 +4,45 @@ import (
 	"container/heap"
 	"log"
 	"sync"
+	"time"
 )
+
+type Proxier interface {
+	MustGet(url string) string
+}
 
 type List struct {
 	Proxies []*Proxy
-	state   *sync.Mutex
-	in      ProxyStream
-}
-
-var defaultList = NewList()
-
-func LoadDefault() {
-	defaultList.Load(KingProxy{}, InCloak{}, ProxIsRight{})
+	sync.Mutex
+	in ProxyStream
 }
 
 func NewList() *List {
 	list := &List{
-		in:    make(ProxyStream),
-		state: &sync.Mutex{},
+		in: make(ProxyStream),
 	}
 	heap.Init(list)
 	return list
 }
 
-// Asynchronous Proxy loader
+// Asynchronously load proxies from sources
 func (list *List) Load(sources ...ProxySource) {
 	for _, source := range sources {
 		go Fetch(list.in, source)
 	}
 }
 
-// Borrows Proxies until successful Response
-func MustGet(url string) *Response {
+func (list *List) LoadDefault() {
+	list.Load(KingProxy{}, InCloak{})
+}
+
+// Borrow proxies until successful response
+func (list *List) MustGet(url string) string {
 	response := &Response{Error: EmptyResponseError{}}
 	for response.Error != nil {
-		response = defaultList.Get(url)
+		response = list.Get(url)
 	}
-	return response
+	return response.Body
 }
 
 type Response struct {
@@ -88,21 +90,36 @@ func (list *List) discardProxyIfBlocked(proxy *Proxy, body string) error {
 }
 
 func (list *List) Borrow() *Proxy {
-	var proxy *Proxy
-	if list.Len() > 0 { // TODO race condition need to wrap in lock
-		proxy = list.lockedRemove()
-		log.Printf("Borrowing proxy %v", proxy)
-	} else {
+	proxy := list.remove()
+	if proxy == nil {
 		log.Printf("Waiting for proxy")
-		proxy = <-list.in
+		proxy = list.waitForProxy()
 	}
+	log.Printf("Borrowing proxy %v", proxy)
 	return proxy
 }
 
-func (list *List) lockedRemove() *Proxy {
-	list.state.Lock()
-	proxy := heap.Pop(list).(*Proxy)
-	list.state.Unlock()
+func (list *List) remove() *Proxy {
+	var proxy *Proxy
+	list.Lock()
+	if list.Len() > 0 {
+		proxy = heap.Pop(list).(*Proxy)
+	}
+	list.Unlock()
+	return proxy
+}
+
+const PROXY_WAIT_TIME = 5 * time.Second
+
+func (list *List) waitForProxy() *Proxy {
+	var proxy *Proxy
+	for proxy == nil {
+		select {
+		case proxy = <-list.in:
+		case <-time.After(PROXY_WAIT_TIME):
+			proxy = list.remove()
+		}
+	}
 	return proxy
 }
 
@@ -111,19 +128,20 @@ const MAX_PROXY_ERRORS = 2
 func (list *List) Return(proxy *Proxy) {
 	if proxy.Errors < MAX_PROXY_ERRORS {
 		log.Printf("Returning proxy %v", proxy)
-		list.lockedAdd(proxy)
+		list.add(proxy)
 	} else {
 		log.Printf("Failing proxy   %v", proxy)
 	}
 }
 
-func (list *List) lockedAdd(proxy *Proxy) {
-	list.state.Lock()
+func (list *List) add(proxy *Proxy) {
+	list.Lock()
 	heap.Push(list, proxy)
-	list.state.Unlock()
+	list.Unlock()
 }
 
-// Heap interface{} Implementation
+// Heap interface{} implementation
+
 func (list *List) Pop() interface{} {
 	index := list.Len() - 1
 	popped := list.Proxies[index]
@@ -134,6 +152,8 @@ func (list *List) Pop() interface{} {
 func (list *List) Push(proxy interface{}) {
 	list.Proxies = append(list.Proxies, proxy.(*Proxy))
 }
+
+// Sort interface{} implementation
 
 func (list *List) Len() int {
 	return len(list.Proxies)

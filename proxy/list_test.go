@@ -11,7 +11,7 @@ import (
 func TestAsyncAccess(t *testing.T) {
 	list := NewList()
 	runProxySource(list)
-	runProxyConsumers(list, 100)
+	runProxyConsumers(list, 1000)
 	assertOrder(t, list)
 }
 
@@ -56,13 +56,13 @@ func useProxyAttempts(list *List, attempts int) {
 	}
 }
 
-const PERCENT_FAILURE = 0.30
+const PERCENT_FAILURE = 0.20
 
 func randomSuccessOrError(proxy *Proxy) {
-	if rand.Float32() > PERCENT_FAILURE {
-		proxy.Successes++
-	} else {
+	if rand.Float32() < PERCENT_FAILURE {
 		proxy.Errors++
+	} else {
+		proxy.Successes++
 	}
 }
 

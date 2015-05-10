@@ -1,5 +1,17 @@
 package craigslist
 
+import (
+	"github.com/rentapplication/craigjr/crawler"
+)
+
+func CitiesAsPosts(crawl func(crawler.PaginationIterator)) {
+	for i := 0; i < len(Cities); i++ {
+		city := Cities[i]
+		posts := NewPosts(city)
+		crawl(posts)
+	}
+}
+
 //links = Array.prototype.slice.call(document.querySelector(".colmask").querySelectorAll("a"))
 //links = links.map(function(link) { return link.href.match(/([a-z]+)\.craigslist/)[1] })
 //JSON.stringify(links)

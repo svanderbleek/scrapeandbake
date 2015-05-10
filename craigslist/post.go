@@ -1,6 +1,12 @@
 package craigslist
 
 type Post struct {
-	Id   string
-	Body string
+	emails  []string
+	numbers []string
 }
+
+func NewPost(body string) *Post { return &Post{} }
+
+func extractEmails(body string)  {}
+func extractNumbers(body string) {}
+func showContactInfo()           {}

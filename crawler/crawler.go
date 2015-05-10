@@ -1,37 +1,27 @@
 package crawler
 
-type PaginationIterator interface {
-	Next() bool
-	Items() []string
-}
+import "fmt"
 
-type UrlStream chan string
+type PaginationIterator interface {
+	Next() (string, bool)
+	Items(string) []string
+}
 
 type Crawler struct {
-	urls UrlStream
-	done chan int
+	pool *Pool
 }
 
-func New(urls UrlStream) *Crawler {
-	return &Crawler{
-		done: make(chan int, 1),
-		urls: urls,
-	}
+func NewCrawler(pool *Pool) *Crawler {
+	return &Crawler{pool}
 }
 
 func (crawler *Crawler) Crawl(pages PaginationIterator) {
-	for pages.Next() {
-		for _, item := range pages.Items() {
-			crawler.urls <- item
+	fmt.Println("????????")
+	for url, done := pages.Next(); !done; url, done = pages.Next() {
+		body := crawler.pool.proxy.MustGet(url)
+		for _, item := range pages.Items(body) {
+			crawler.pool.Urls <- item
 		}
 	}
-	crawler.Done()
-}
-
-func (crawler *Crawler) Done() {
-	crawler.done <- 1
-}
-
-func (crawler *Crawler) WaitDone() {
-	<-crawler.done
+	crawler.pool.crawlers <- crawler
 }

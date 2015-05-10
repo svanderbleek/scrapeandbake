@@ -6,8 +6,15 @@ import (
 	"strings"
 )
 
-func ScrapeAttributes(query Query) []string {
-	document, err := NewDocument(query.Body)
+type Querier interface {
+	Body() string
+	Selector() string
+	Result(*goquery.Selection) string
+}
+
+func Scrape(query Querier) []string {
+	body := query.Body()
+	document, err := NewDocument(body)
 	if err == nil {
 		return document.Scrape(query)
 	} else {
@@ -16,14 +23,8 @@ func ScrapeAttributes(query Query) []string {
 	}
 }
 
-type Query struct {
-	Body      string
-	Selector  string
-	Attribute string
-}
-
 type Document interface {
-	Scrape(Query) []string
+	Scrape(Querier) []string
 }
 
 type GoQueryDocument struct {
@@ -36,10 +37,11 @@ func NewDocument(html string) (Document, error) {
 	return &GoQueryDocument{document}, err
 }
 
-func (document GoQueryDocument) Scrape(query Query) []string {
-	results := document.Find(query.Selector).Map(func(index int, selection *goquery.Selection) string {
-		result, _ := selection.Attr(query.Attribute)
-		return result
+func (document GoQueryDocument) Scrape(query Querier) []string {
+	selector := query.Selector()
+	selections := document.Find(selector)
+	results := selections.Map(func(index int, selection *goquery.Selection) string {
+		return query.Result(selection)
 	})
 	return results
 }

@@ -5,47 +5,22 @@ import (
 	"github.com/rentapplication/craigjr/craigslist"
 	"github.com/rentapplication/craigjr/crawler"
 	"github.com/rentapplication/craigjr/proxy"
+	"github.com/rentapplication/craigjr/visitor"
 )
 
 func main() {
+	proxy := proxy.NewList()
 	proxy.LoadDefault()
-	urls := make(chan string)
-	c1 := crawler.New(urls)
-	c2 := crawler.New(urls)
-	go c1.Crawl(&craigslist.Posts{City: "atlanta"})
-	go c2.Crawl(&craigslist.Posts{City: "atlanta"})
-	go stupidUrlConsumer(urls)
-	c1.WaitDone()
-	c2.WaitDone()
-	close(urls)
+	crawlers := crawler.NewPool(proxy)
+	craigslist.CitiesAsPosts(crawlers.Crawl)
+	visitors := visitor.NewPool(proxy)
+	visitors.Visit(crawlers.Urls)
+	drainPosts(visitors.Posts)
 }
 
-func stupidUrlConsumer(urls crawler.UrlStream) {
-	defer func() { recover() }()
-	<-urls
-}
-
-func proxyDemo() {
-	proxyList := proxy.NewList()
-	responses := make(chan string)
-
-	for i := 0; i < 4; i++ {
-		go func() {
-			for {
-				response := proxyList.Get("http://atlanta.craigslist.org/search/apa?s=100")
-				if response.Error == nil {
-					responses <- "ok"
-				} else {
-					responses <- response.Error.Error()
-				}
-			}
-		}()
-	}
-
+func drainPosts(posts <-chan *craigslist.Post) {
 	for {
-		select {
-		case r := <-responses:
-			fmt.Println(r)
-		}
+		post := <-posts
+		fmt.Println(post)
 	}
 }
