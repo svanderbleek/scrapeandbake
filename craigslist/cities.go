@@ -4,11 +4,10 @@ import (
 	"github.com/rentapplication/craigjr/crawler"
 )
 
-func CitiesAsPosts(crawl func(crawler.PaginationIterator)) {
+func StreamCities(posts chan crawler.PaginationIterator) {
 	for i := 0; i < len(Cities); i++ {
 		city := Cities[i]
-		posts := NewPosts(city)
-		crawl(posts)
+		posts <- NewPosts(city)
 	}
 }
 

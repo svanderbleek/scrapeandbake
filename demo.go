@@ -11,10 +11,12 @@ import (
 func main() {
 	proxy := proxy.NewList()
 	proxy.LoadDefault()
+	posts := make(chan crawler.PaginationIterator)
+	go craigslist.StreamCities(posts)
 	crawlers := crawler.NewPool(proxy)
-	craigslist.CitiesAsPosts(crawlers.Crawl)
+	go crawlers.Crawl(posts)
 	visitors := visitor.NewPool(proxy)
-	visitors.Visit(crawlers.Urls)
+	go visitors.Visit(crawlers.Urls)
 	drainPosts(visitors.Posts)
 }
 

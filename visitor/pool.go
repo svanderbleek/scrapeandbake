@@ -6,27 +6,29 @@ import (
 )
 
 type Pool struct {
+	proxy.Proxier
 	Posts    chan *craigslist.Post
 	visitors chan *Visitor
-	proxy    proxy.Proxier
 }
 
 func NewPool(proxier proxy.Proxier) *Pool {
 	return &Pool{
+		Proxier:  proxier,
 		Posts:    make(chan *craigslist.Post),
-		proxy:    proxier,
 		visitors: make(chan *Visitor),
 	}
 }
 
-func (pool *Pool) Visit(urls <-chan string) {
-	go pool.visitUrls(urls)
+func (pool *Pool) Return(post *craigslist.Post, visitor *Visitor) {
+	pool.Posts <- post
+	pool.visitors <- visitor
 }
 
-func (pool *Pool) visitUrls(urls <-chan string) {
-	url := <-urls
-	visitor := pool.Visitor(url)
-	go visitor.Visit(url)
+func (pool *Pool) Visit(urls <-chan string) {
+	for url := range urls {
+		visitor := pool.Visitor(url)
+		go visitor.Visit(url)
+	}
 }
 
 func (pool *Pool) Visitor(url string) *Visitor {

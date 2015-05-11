@@ -1,20 +1,25 @@
 package visitor
 
+// TODO Wrong
 import (
 	"github.com/rentapplication/craigjr/craigslist"
 )
 
-type Visitor struct {
-	pool *Pool
+type Pooler interface {
+	MustGet(string) string
+	Return(*craigslist.Post, *Visitor)
 }
 
-func NewVisitor(pool *Pool) *Visitor {
+type Visitor struct {
+	Pooler
+}
+
+func NewVisitor(pool Pooler) *Visitor {
 	return &Visitor{pool}
 }
 
 func (visitor *Visitor) Visit(url string) {
-	body := visitor.pool.proxy.MustGet(url)
+	body := visitor.MustGet(url)
 	post := craigslist.NewPost(body)
-	visitor.pool.Posts <- post
-	visitor.pool.visitors <- visitor
+	visitor.Return(post, visitor)
 }

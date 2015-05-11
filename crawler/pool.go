@@ -1,27 +1,29 @@
 package crawler
 
 import (
-	"fmt"
 	"github.com/rentapplication/craigjr/proxy"
 )
 
 type Pool struct {
-	Urls     chan string
+	Urls chan string
+	proxy.Proxier
 	crawlers chan *Crawler
 	proxy    proxy.Proxier
 }
 
 func NewPool(proxier proxy.Proxier) *Pool {
 	return &Pool{
-		Urls:  make(chan string),
-		proxy: proxier,
+		Urls:     make(chan string),
+		Proxier:  proxier,
+		crawlers: make(chan *Crawler),
 	}
 }
 
-func (pool *Pool) Crawl(pages PaginationIterator) {
-	crawler := pool.Crawler()
-	fmt.Println(crawler)
-	go crawler.Crawl(pages)
+func (pool *Pool) Crawl(posts chan PaginationIterator) {
+	for posts := range posts {
+		crawler := pool.Crawler()
+		go crawler.Crawl(posts)
+	}
 }
 
 func (pool *Pool) Crawler() *Crawler {
@@ -32,4 +34,12 @@ func (pool *Pool) Crawler() *Crawler {
 		crawler = NewCrawler(pool)
 	}
 	return crawler
+}
+
+func (pool *Pool) Return(crawler *Crawler) {
+	pool.crawlers <- crawler
+}
+
+func (pool *Pool) UrlStream() chan string {
+	return pool.Urls
 }
