@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/rentapplication/craigjr/craigslist"
 	"github.com/rentapplication/craigjr/crawler"
-	"github.com/rentapplication/craigjr/indexer"
 	"github.com/rentapplication/craigjr/proxy"
+	"github.com/rentapplication/craigjr/store"
 	"github.com/rentapplication/craigjr/visitor"
 )
 
@@ -25,9 +25,9 @@ func main() {
 }
 
 func indexPosts(posts <-chan *craigslist.Post) {
-	index := indexer.New()
+	index := store.New()
 	for {
 		post := <-posts
-		index.Index(post)
+		index.Store(post)
 	}
 }

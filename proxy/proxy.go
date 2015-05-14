@@ -36,6 +36,7 @@ func (proxy *Proxy) getBody(url string) (string, error) {
 	if err != nil {
 		proxy.Errors++
 	} else {
+		proxy.Errors = 0
 		proxy.Successes++
 	}
 	return body, err

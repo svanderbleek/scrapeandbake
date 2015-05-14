@@ -7,9 +7,9 @@ import (
 )
 
 type Post struct {
-	Url         string
-	Body        string
-	ContactInfo string
+	Url         string `json:"_id"`
+	Body        string `json:"body"`
+	ContactInfo string `json:"info,omitempty"`
 }
 
 func NewPost(url, body string) *Post {

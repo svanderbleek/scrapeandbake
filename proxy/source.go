@@ -2,14 +2,13 @@ package proxy
 
 import (
 	"fmt"
-	"log"
 )
 
 type ProxyStream chan *Proxy
 
 type ProxySource interface {
-	Result() *Result
 	fmt.Stringer
+	Result() *Result
 }
 
 type Result struct {
@@ -28,9 +27,9 @@ func (stream ProxyStream) Load(result *Result) {
 	if result.Error == nil {
 		for _, proxy := range result.Proxies {
 			stream <- proxy
-			log.Printf("Proxy loaded %v from %v", proxy, result.Source)
+			debug("Proxy loaded %v from %v", proxy, result.Source)
 		}
 	} else {
-		log.Printf("Proxies failed to load from %v", result.Source)
+		debug("Proxies failed to load from %v", result.Source)
 	}
 }

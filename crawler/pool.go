@@ -2,11 +2,21 @@ package crawler
 
 import (
 	"github.com/rentapplication/craigjr/proxy"
+	. "github.com/tj/go-debug"
+	"time"
+)
+
+var debug = Debug("pool")
+
+const (
+	MAX_POOL = 20
+	MAX_WAIT = 30 * time.Second
 )
 
 type Pool struct {
-	Urls chan string
 	proxy.Proxier
+	Urls     chan string
+	Count    int
 	crawlers chan *Crawler
 	proxy    proxy.Proxier
 }
@@ -30,8 +40,14 @@ func (pool *Pool) Crawler() *Crawler {
 	var crawler *Crawler
 	select {
 	case crawler = <-pool.crawlers:
-	default:
-		crawler = NewCrawler(pool)
+	case <-time.After(MAX_WAIT):
+		if pool.Count < MAX_POOL {
+			pool.Count++
+			debug("Crawler count is %v", pool.Count)
+			crawler = NewCrawler(pool)
+		} else {
+			crawler = pool.Crawler()
+		}
 	}
 	return crawler
 }

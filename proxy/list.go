@@ -2,10 +2,12 @@ package proxy
 
 import (
 	"container/heap"
-	"log"
+	. "github.com/tj/go-debug"
 	"sync"
 	"time"
 )
+
+var debug = Debug("proxy")
 
 type Proxier interface {
 	MustGet(url string) string
@@ -68,9 +70,9 @@ func (list *List) Get(url string) *Response {
 
 func (list *List) getBodyWithProxy(url string) (string, error) {
 	proxy := list.Borrow()
-	log.Printf("Get url %v with Proxy %v", url, proxy)
+	debug("Get url %v with Proxy %v", url, proxy)
 	body, err := proxy.getBody(url)
-	log.Printf("Got url %v with Proxy %v and err %v", url, proxy, err)
+	debug("Got url %v with Proxy %v and err %v", url, proxy, err)
 	if err == nil {
 		err = list.discardProxyIfBlocked(proxy, body)
 	} else {
@@ -81,7 +83,7 @@ func (list *List) getBodyWithProxy(url string) (string, error) {
 
 func (list *List) discardProxyIfBlocked(proxy *Proxy, body string) error {
 	if proxy.isBlocked(body) {
-		log.Printf("Proxy %v is blocked, discarding", proxy)
+		debug("Proxy %v is blocked, discarding", proxy)
 		return ProxyBlockedError{}
 	} else {
 		list.Return(proxy)
@@ -92,10 +94,10 @@ func (list *List) discardProxyIfBlocked(proxy *Proxy, body string) error {
 func (list *List) Borrow() *Proxy {
 	proxy := list.remove()
 	if proxy == nil {
-		log.Printf("Waiting for proxy")
+		debug("Waiting for proxy")
 		proxy = list.waitForProxy()
 	}
-	log.Printf("Borrowing proxy %v", proxy)
+	debug("Borrowing proxy %v", proxy)
 	return proxy
 }
 
@@ -127,10 +129,10 @@ const MAX_PROXY_ERRORS = 2
 
 func (list *List) Return(proxy *Proxy) {
 	if proxy.Errors < MAX_PROXY_ERRORS {
-		log.Printf("Returning proxy %v", proxy)
+		debug("Returning proxy %v", proxy)
 		list.add(proxy)
 	} else {
-		log.Printf("Failing proxy   %v", proxy)
+		debug("Failing proxy   %v", proxy)
 	}
 }
 
