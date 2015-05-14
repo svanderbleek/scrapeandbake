@@ -4,9 +4,15 @@ import (
 	"github.com/rentapplication/craigjr/craigslist"
 	"github.com/rentapplication/craigjr/proxy"
 	. "github.com/tj/go-debug"
+	"time"
 )
 
 var debug = Debug("pool")
+
+const (
+	MAX_WAIT  = 30 * time.Second
+	INIT_POOL = 40
+)
 
 type Pool struct {
 	proxy.Proxier
@@ -17,11 +23,16 @@ type Pool struct {
 }
 
 func NewPool(proxier proxy.Proxier) *Pool {
-	return &Pool{
+	pool := &Pool{
 		Proxier:  proxier,
 		Posts:    make(chan *craigslist.Post),
-		visitors: make(chan *Visitor),
+		visitors: make(chan *Visitor, INIT_POOL),
 	}
+	for i := 0; i < INIT_POOL; i++ {
+		pool.visitors <- NewVisitor(pool)
+		pool.Count++
+	}
+	return pool
 }
 
 func (pool *Pool) Return(post *craigslist.Post, visitor *Visitor) {
@@ -31,7 +42,6 @@ func (pool *Pool) Return(post *craigslist.Post, visitor *Visitor) {
 
 func (pool *Pool) Visit(urls <-chan string) {
 	for url := range urls {
-		pool.Visited++
 		visitor := pool.Visitor(url)
 		go visitor.Visit(url)
 	}
@@ -41,7 +51,9 @@ func (pool *Pool) Visitor(url string) *Visitor {
 	var visitor *Visitor
 	select {
 	case visitor = <-pool.visitors:
-	default:
+		pool.Visited++
+		debug("Visited count is %v", pool.Visited)
+	case <-time.After(MAX_WAIT):
 		pool.Count++
 		debug("Visitor count is %v", pool.Count)
 		visitor = NewVisitor(pool)

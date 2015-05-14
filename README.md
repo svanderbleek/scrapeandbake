@@ -23,4 +23,6 @@ export ELASTIC_SEARCH_URL=
 - [x] Posts scrapes full Urls for each Post
 - [x] Pull from City List for Crawlers to produce Post Urls
 - [x] Visitors to pull from Url stream
-- [ ] Index Posts into elastic search
+- [x] Index Posts into elastic search
+- [ ] Balance pools based on limited resources (automatically preferred)
+- [ ] More Proxy Sources

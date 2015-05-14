@@ -2,14 +2,20 @@ package store
 
 import (
 	elastigo "github.com/mattbaird/elastigo/lib"
-	"github.com/rentapplication/craigjr/craigslist"
+	. "github.com/tj/go-debug"
 	"net/url"
 	"os"
 )
 
+var debug = Debug("store")
+
 type Storer interface {
-	Store(*craigslist.Post)
-	IsStored(*craigslist.Post) bool
+	Store(Storable)
+	IsStored(Storable) bool
+}
+
+type Storable interface {
+	Id() string
 }
 
 type ElasticSearch struct {
@@ -32,15 +38,16 @@ func (es *ElasticSearch) configure(u *url.URL) {
 	es.SetHosts([]string{u.Host})
 }
 
-func (es *ElasticSearch) Store(post *craigslist.Post) {
-	_, err := es.Index("craigjr", "post", "", nil, post)
+func (es *ElasticSearch) Store(item Storable) {
+	_, err := es.Index("craigjr", "post", item.Id(), nil, item)
 	if err != nil {
 		es.Errors++
+		debug("ElasticSearch error %v", err)
 	}
 }
 
-func (es *ElasticSearch) IsStored(post *craigslist.Post) bool {
-	idQuery := "_id:" + post.Url
+func (es *ElasticSearch) IsStored(item Storable) bool {
+	idQuery := "_id:" + item.Id()
 	query := map[string]interface{}{"q": idQuery}
 	result, err := es.SearchUri("craigjr", "post", query)
 	if err == nil {

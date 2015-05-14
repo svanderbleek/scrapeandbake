@@ -7,7 +7,7 @@ import (
 )
 
 type Post struct {
-	Url         string `json:"_id"`
+	Url         string `json:"url"`
 	Body        string `json:"body"`
 	ContactInfo string `json:"info,omitempty"`
 }
@@ -17,6 +17,12 @@ func NewPost(url, body string) *Post {
 		Url:  url,
 		Body: body,
 	}
+}
+
+var replaceUrl = regexp.MustCompile(`(http|:|/|.)`)
+
+func (post *Post) Id() string {
+	return replaceUrl.ReplaceAllString(post.Url, "")
 }
 
 var showContactInfo = regexp.MustCompile(`show contact info`)

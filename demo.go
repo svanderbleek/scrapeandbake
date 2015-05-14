@@ -8,6 +8,7 @@ import (
 	"github.com/rentapplication/craigjr/visitor"
 )
 
+//TODO PULL BASED?
 func main() {
 	proxy := proxy.NewList()
 	proxy.LoadDefault()
