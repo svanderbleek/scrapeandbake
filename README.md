@@ -1,6 +1,6 @@
 ## craigjr
 
-Packages: `craigslist`, `crawler`, `scraper`, `proxy`
+Packages: `craigslist`, `crawler`, `visitor`, `scraper`, `proxy`
 
 ```
 go build && ./craigjr
@@ -14,6 +14,7 @@ see `demo.go` for usage
 export IN_CLOAK_API_KEY=
 export PROX_IS_RIGHT_API_KEY=
 export KING_PROXY_API_KEY=
+export ELASTIC_SEARCH_URL=
 ```
 
 ## agenda
@@ -22,5 +23,4 @@ export KING_PROXY_API_KEY=
 - [x] Posts scrapes full Urls for each Post
 - [x] Pull from City List for Crawlers to produce Post Urls
 - [x] Visitors to pull from Url stream
-- [ ] Pool sizes tuned for number of open connections
-- [ ] scrape Post data
+- [ ] Index Posts into elastic search

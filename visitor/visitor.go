@@ -1,6 +1,5 @@
 package visitor
 
-// TODO Wrong
 import (
 	"github.com/rentapplication/craigjr/craigslist"
 )
@@ -19,7 +18,11 @@ func NewVisitor(pool Pooler) *Visitor {
 }
 
 func (visitor *Visitor) Visit(url string) {
-	body := visitor.MustGet(url)
-	post := craigslist.NewPost(body)
+	postBody := visitor.MustGet(url)
+	post := craigslist.NewPost(url, postBody)
+	if post.IsContactInfo() {
+		contactInfoBody := visitor.MustGet(post.ContactInfoUrl())
+		post.ContactInfo = contactInfoBody
+	}
 	visitor.Return(post, visitor)
 }
