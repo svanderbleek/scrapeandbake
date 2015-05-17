@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"fmt"
 	"github.com/rentapplication/craigjr/web"
 	"os"
 )
@@ -33,25 +32,22 @@ type proxIsRightResult struct {
 	Error   error
 }
 
+const proxIsRightList = "https://proxies.p.mashape.com/api/proxy/get?onlyActive=true&onlySupportsCraigslist=true"
+
 func (pis ProxIsRight) Query() *web.Query {
 	query := &web.Query{
-		Url:    pis.ListUrl(),
+		Url:    proxIsRightList,
+		Header: &web.Header{"X-Mashape-Key", os.Getenv("MASHAPE_API_KEY")},
 		Result: &proxIsRightResult{},
 	}
 	query.FetchJson()
 	return query
 }
 
-const proxIsRightList = "https://theproxisright.com/api/proxy/get?onlyActive=true&onlySupportsCraigslist=true&format=json&apiKey=%v"
-
-func (pis ProxIsRight) ListUrl() string {
-	return fmt.Sprintf(proxIsRightList, os.Getenv("PROX_IS_RIGHT_API_KEY"))
-}
-
 func (pis ProxIsRight) Proxies(result *proxIsRightResult) []*Proxy {
 	var proxies []*Proxy
 	for _, proxy := range result.Proxies {
-		proxies = append(proxies, NewProxy(proxy.Host))
+		proxies = append(proxies, NewProxy("http://"+proxy.Host))
 	}
 	return proxies
 }

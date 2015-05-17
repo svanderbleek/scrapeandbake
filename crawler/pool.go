@@ -9,8 +9,7 @@ import (
 var debug = Debug("pool")
 
 const (
-	INIT_POOL = 4
-	MAX_POOL  = 6
+	INIT_POOL = 10
 	MAX_WAIT  = 30 * time.Second
 )
 
@@ -50,13 +49,9 @@ func (pool *Pool) Crawler() *Crawler {
 		pool.Crawled++
 		debug("Crawled count is %v", pool.Crawled)
 	case <-time.After(MAX_WAIT):
-		if pool.Count < MAX_POOL {
-			pool.Count++
-			debug("Crawler count is %v", pool.Count)
-			crawler = NewCrawler(pool)
-		} else {
-			crawler = pool.Crawler()
-		}
+		pool.Count++
+		debug("Crawler count is %v", pool.Count)
+		crawler = NewCrawler(pool)
 	}
 	return crawler
 }

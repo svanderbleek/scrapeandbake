@@ -35,7 +35,7 @@ func (list *List) Load(sources ...ProxySource) {
 }
 
 func (list *List) LoadDefault() {
-	list.Load(KingProxy{}, InCloak{})
+	list.Load(ProxIsRight{}, KingProxy{}, InCloak{})
 }
 
 // Borrow proxies until successful response
