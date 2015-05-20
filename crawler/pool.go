@@ -9,15 +9,14 @@ import (
 var debug = Debug("pool")
 
 const (
-	INIT_POOL = 10
-	MAX_WAIT  = 30 * time.Second
+	INIT_POOL = 100
+	MAX_WAIT  = 120 * time.Second
 )
 
 type Pool struct {
 	proxy.Proxier
 	Urls     chan string
 	Count    int
-	Crawled  int
 	crawlers chan *Crawler
 	proxy    proxy.Proxier
 }
@@ -28,11 +27,15 @@ func NewPool(proxier proxy.Proxier) *Pool {
 		Proxier:  proxier,
 		crawlers: make(chan *Crawler, INIT_POOL),
 	}
+	pool.init()
+	return pool
+}
+
+func (pool *Pool) init() {
 	for i := 0; i < INIT_POOL; i++ {
 		pool.crawlers <- NewCrawler(pool)
 		pool.Count++
 	}
-	return pool
 }
 
 func (pool *Pool) Crawl(posts chan PaginationIterator) {
@@ -46,8 +49,6 @@ func (pool *Pool) Crawler() *Crawler {
 	var crawler *Crawler
 	select {
 	case crawler = <-pool.crawlers:
-		pool.Crawled++
-		debug("Crawled count is %v", pool.Crawled)
 	case <-time.After(MAX_WAIT):
 		pool.Count++
 		debug("Crawler count is %v", pool.Count)

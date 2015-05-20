@@ -11,7 +11,7 @@ var debug = Debug("store")
 
 type Storer interface {
 	Store(Storable)
-	IsStored(Storable) bool
+	IsStored(string) bool
 }
 
 type Storable interface {
@@ -46,8 +46,8 @@ func (es *ElasticSearch) Store(item Storable) {
 	}
 }
 
-func (es *ElasticSearch) IsStored(item Storable) bool {
-	idQuery := "_id:" + item.Id()
+func (es *ElasticSearch) IsStored(id string) bool {
+	idQuery := "_id:" + id
 	query := map[string]interface{}{"q": idQuery}
 	result, err := es.SearchUri("craigjr", "post", query)
 	if err == nil {

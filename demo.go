@@ -1,12 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"github.com/rentapplication/craigjr/craigslist"
 	"github.com/rentapplication/craigjr/crawler"
 	"github.com/rentapplication/craigjr/proxy"
 	"github.com/rentapplication/craigjr/store"
-	//"github.com/rentapplication/craigjr/visitor"
+	"github.com/rentapplication/craigjr/visitor"
 )
 
 func main() {
@@ -19,21 +18,10 @@ func main() {
 	crawlers := crawler.NewPool(proxy)
 	go crawlers.Crawl(posts)
 
-	drainUrls(crawlers.Urls)
+	visitors := visitor.NewPool(proxy)
+	go visitors.Visit(crawlers.Urls)
 
-	//visitors := visitor.NewPool(proxy)
-	//go visitors.Visit(crawlers.Urls)
-
-	//indexPosts(visitors.Posts)
-}
-
-func drainUrls(urls chan string) {
-	count := 0
-	for url := range urls {
-		count++
-		fmt.Println(url)
-		fmt.Println(count)
-	}
+	indexPosts(visitors.Posts)
 }
 
 func indexPosts(posts <-chan *craigslist.Post) {
