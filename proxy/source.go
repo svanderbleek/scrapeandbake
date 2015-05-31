@@ -18,9 +18,11 @@ type Result struct {
 }
 
 func Fetch(stream ProxyStream, source ProxySource) {
-	result := source.Result()
-	result.Source = source
-	stream.Load(result)
+	for {
+		result := source.Result()
+		result.Source = source
+		stream.Load(result)
+	}
 }
 
 func (stream ProxyStream) Load(result *Result) {

@@ -4,14 +4,12 @@ import (
 	"github.com/rentapplication/craigjr/craigslist"
 	"github.com/rentapplication/craigjr/proxy"
 	. "github.com/tj/go-debug"
-	"time"
 )
 
 var debug = Debug("pool")
 
 const (
 	INIT_POOL = 100
-	MAX_WAIT  = 60 * time.Second
 )
 
 type Pool struct {
@@ -51,13 +49,5 @@ func (pool *Pool) Visit(urls <-chan string) {
 }
 
 func (pool *Pool) Visitor(url string) *Visitor {
-	var visitor *Visitor
-	select {
-	case visitor = <-pool.visitors:
-	case <-time.After(MAX_WAIT):
-		pool.Count++
-		debug("Visitor count is %v", pool.Count)
-		visitor = NewVisitor(pool)
-	}
-	return visitor
+	return <-pool.visitors
 }

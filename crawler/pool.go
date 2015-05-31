@@ -3,14 +3,12 @@ package crawler
 import (
 	"github.com/rentapplication/craigjr/proxy"
 	. "github.com/tj/go-debug"
-	"time"
 )
 
 var debug = Debug("pool")
 
 const (
 	INIT_POOL = 100
-	MAX_WAIT  = 120 * time.Second
 )
 
 type Pool struct {
@@ -46,15 +44,7 @@ func (pool *Pool) Crawl(posts chan PaginationIterator) {
 }
 
 func (pool *Pool) Crawler() *Crawler {
-	var crawler *Crawler
-	select {
-	case crawler = <-pool.crawlers:
-	case <-time.After(MAX_WAIT):
-		pool.Count++
-		debug("Crawler count is %v", pool.Count)
-		crawler = NewCrawler(pool)
-	}
-	return crawler
+	return <-pool.crawlers
 }
 
 func (pool *Pool) Return(crawler *Crawler) {
