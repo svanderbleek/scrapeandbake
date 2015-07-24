@@ -8,7 +8,7 @@ import (
 var debug = Debug("pool")
 
 const (
-	INIT_POOL = 100
+	INIT_POOL = 10
 )
 
 type Pool struct {
